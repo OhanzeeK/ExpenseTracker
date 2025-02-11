@@ -43,7 +43,8 @@ namespace ExpenseTracker
             while (!exited)
             {
                 Console.Write("What would you like to do?\n\n1. Check balance\n2. Add a transaction\n" +
-                    "3. View current expenses\n4. View current income\nYour response: ");
+                    "3. View current expenses\n4. View current income\n5. Clear all transactions\n6. Exit" +
+                    "\nYour response: ");
 
                 released = false;
                 while (!released)
@@ -56,71 +57,53 @@ namespace ExpenseTracker
                     catch (FormatException)
                     {
                         Console.WriteLine("\nOnly enter one of the numbers on the menu. Try again.\n");
+
                         Console.WriteLine("What would you like to do?\n\n1. Check balance\n2. Add a transaction\n" +
-                    "3. View current expenses\n4. View current income\nYour response: ");
+                        "3. View current expenses\n4. View current income\n" +
+                        "5. Clear all transactions\n6. Exit\nYour response: ");
+
                     }
                 }
 
-
+                Console.WriteLine();
                 switch (choice)
                 {
                     case 1:
-                        try
+                        if (totalExpense.Count == 0 && totalIncome.Count == 0)
                         {
-                            
-                            exReader = new StreamReader(@"C:\Expenses\ExpenseTracker\Expenses.txt");
-                            inReader = new StreamReader(@"C:\Expenses\ExpenseTracker\Income.txt");
-
-                            //Sums up current balance by adding expenses and incomes from existing files that have been written to previously
-                            while (!exReader.EndOfStream)
+                            Console.WriteLine($"\nYour current balance is: ${balance}");
+                        }
+                        else
+                        {
+                            for (int i = 0; i < totalExpense.Count(); i++)
                             {
-                                string reader = exReader.ReadLine();
-
-                                string[] info = reader.Split(',');
                                 try
                                 {
-                                    balance += double.Parse(info[1]);
-                                }
-                                catch (FormatException)
-                                {
-
+                                    balance += totalExpense[i].getAmount();
                                 }
                                 catch (ArgumentNullException)
                                 {
                                     balance += 0;
                                 }
-                            }
-                            exReader.Close();
 
-                            while (!inReader.EndOfStream)
+                            }
+
+                            for (int i = 0; i < totalIncome.Count(); i++)
                             {
-                                string reader = inReader.ReadLine();
-                                string[] info = reader.Split(',');
                                 try
                                 {
-                                    balance += double.Parse(info[1]);
-                                }
-                                catch (FormatException)
-                                {
-
+                                    balance += totalIncome[i].getAmount();
                                 }
                                 catch (ArgumentNullException)
                                 {
                                     balance += 0;
                                 }
+
                             }
-                            inReader.Close();
 
                             Console.WriteLine($"\nYour current balance is: ${balance}");
                         }
-                        catch (FileNotFoundException)
-                        {
-                            Console.WriteLine("Error. File could not be found.");
-                        }
-                        catch (IOException)
-                        {
-                            Console.WriteLine("An unforseen error has occured.");
-                        }
+                        
                         break;
 
                     case 2:
@@ -257,7 +240,7 @@ namespace ExpenseTracker
                                 Income newIn = new(desc, recur, hours, rate);
                                 totalIncome.Add(newIn);
 
-                                inWriter = new StreamWriter(@"C:\Expenses\ExpenseTracker\Income.txt");
+                                inWriter = new StreamWriter(@"C:\Expenses\ExpenseTracker\Income.txt", true);
                                 inWriter.WriteLine(newIn.getDesc() + ',' + newIn.getAmount() + ',' + newIn.getRec());
                                 inWriter.Close();
                             }
@@ -357,7 +340,10 @@ namespace ExpenseTracker
 
                     case 3:
 
-                        //Refreshes total expense before readding all expenses to make sure it's updated properly
+                        
+                        Console.WriteLine();
+                        //Refreshes total expense before reading all expenses to ensure correct output
+
                         totalExpense.Clear();
                         exReader = new StreamReader(@"C:\Expenses\ExpenseTracker\Expenses.txt");
                         string[] rawEx = new string[4];
@@ -365,19 +351,35 @@ namespace ExpenseTracker
                         while (!exReader.EndOfStream)
                         {
                             rawEx = exReader.ReadLine().Split(',');
-                            Expense newE = new Expense(rawEx[0], double.Parse(rawEx[1]), bool.Parse(rawEx[2]), bool.Parse(rawEx[3]));
-                            totalExpense.Add(newE);
+                            if (rawEx.Length == 4)
+                            {
+                                Expense newE = new Expense(rawEx[0], double.Parse(rawEx[1]), bool.Parse(rawEx[2]), bool.Parse(rawEx[3]));
+                                totalExpense.Add(newE);
+                            }
+                            
+                        }
+                        exReader.Close();
+
+                        if (totalExpense.Count() == 0)
+                        {
+                            Console.WriteLine("No expenses available!");
+                        }
+                        else
+                        {
+                            //Displays all expenses to the user by their order in the file (will work on sorting by certain options later)
+                            for (int i = 0; i < totalExpense.Count(); i++)
+                            {
+                                Console.Write(i + ".\n" + totalExpense[i].ToString() + "\n\n");
+                            }
                         }
                         
-                        //Displays all expenses to the user by their order in the file (will work on sorting by certain options later)
-                        for (int i = 0; i < totalExpense.Count(); i++)
-                        {
-                            Console.Write(totalExpense[i].ToString() + "\n\n");
-                        }
                         break;
 
                     case 4:
 
+                        Console.WriteLine();
+
+                        //Refreshes total income before reading all credits to ensure correct output
                         inReader = new StreamReader(@"C:\Expenses\ExpenseTracker\Income.txt");
                         totalIncome.Clear();
                         string[] rawIn = new string[3];
@@ -385,33 +387,55 @@ namespace ExpenseTracker
                         while (!inReader.EndOfStream)
                         {
                             rawIn = inReader.ReadLine().Split(',');
-                            Income newI = new Income(rawIn[0], double.Parse(rawIn[1]), bool.Parse(rawIn[2]));
-                            totalIncome.Add(newI);
+                            if (rawIn.Length == 3)
+                            {
+                                Income newI = new Income(rawIn[0], double.Parse(rawIn[1]), bool.Parse(rawIn[2]));
+                                totalIncome.Add(newI);
+                            }
+                            
                         }
+                        inReader.Close();
 
-                        //Displays all expenses to the user by their order in the file (will work on sorting by certain options later)
-                        for (int i = 0; i < totalIncome.Count(); i++)
+                        if(totalIncome.Count == 0)
                         {
-                            Console.Write(totalIncome[i].ToString() + "\n\n");
+                            Console.WriteLine("No income available!");
+                        }
+                        else
+                        {
+                            //Displays all expenses to the user by their order in the file (will work on sorting by certain options later)
+                            for (int i = 0; i < totalIncome.Count(); i++)
+                            {
+                                Console.Write(i + ".\n" + totalIncome[i].ToString() + "\n");
+                            }
                         }
                         break;
 
-           
+                    case 5:
+                        Console.WriteLine("\nClearing...");
+                        inWriter = new StreamWriter(@"C:\Expenses\ExpenseTracker\Income.txt");
+                        exWriter = new StreamWriter(@"C:\Expenses\ExpenseTracker\Expenses.txt");
+
+                        inWriter.WriteLine();
+                        exWriter.WriteLine();
+
+                        inWriter.Close();
+                        exWriter.Close();
+
+
+                        Console.WriteLine("Cleared!");
+                        break;
                     
+                    //Closes the application
+                    case 6:
+                        Console.WriteLine("\nThank you for using the expense tracker. Goodbye!");
+                        exited = true;
+                        break;
                 }
 
-                
-
-                //Asking if the user wants to do another transaction
-                Console.WriteLine("\nDo you want to add another transaction/view the current balance?\nIf so, type in any character and hit enter. Otherwise, just hit enter.");
-                Console.Write("\nYour response: ");
-                choice2 = Console.ReadLine();
-                
-                if ((choice2 == null || choice2.Equals("")))
-                {
-                    exited = true;
-                }
                 Console.WriteLine("\n");
+
+               
+
 
             }
         }
